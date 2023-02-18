@@ -33,8 +33,8 @@ def getReadLoop(i2c, setDisplay):
         try:
             mpu6500 = MPU6500(
                 i2c,
-                accel_sf=SF_G,
-                gyro_sf=SF_DEG_S) #,
+                accel_sf=SF_G) #,
+                #gyro_sf=SF_DEG_S) #,
                 #gyro_offset=(-0.06217736, 0.004287855, -0.01491513),
                 #accel_offset=(-0.004601356, 0.1052795, 0.2896795))
             
@@ -44,7 +44,7 @@ def getReadLoop(i2c, setDisplay):
                 mag_offset=(-6.254883, 81.39698, -20.41348),
                 mag_scale=(0.9332827, 1.106261, 0.976022))
             
-            print(mpu6500.calibrate())
+            #print(mpu6500.calibrate())
             
         except OSError as e:
             state.status = 'ESensor'
@@ -65,9 +65,14 @@ def getReadLoop(i2c, setDisplay):
                 mahony.update(
                     mpu9250.acceleration[0], -mpu9250.acceleration[1], mpu9250.acceleration[2],
                     mpu9250.gyro[0] * DEG_TO_RAD, -mpu9250.gyro[1] * DEG_TO_RAD, mpu9250.gyro[2] * DEG_TO_RAD,
-                    mpu9250.magnetic[1], -mpu9250.magnetic[0], -mpu9250.magnetic[2],
+                    mpu9250.magnetic[1] * 0.01, -mpu9250.magnetic[0] * 0.01, -mpu9250.magnetic[2] * 0.01,
                     deltat
                 )
+                
+                mag_mag = math.sqrt(
+                    (mpu9250.magnetic[0] * 0.01) ** 2 +
+                    (mpu9250.magnetic[1] * 0.01) ** 2 +
+                    (mpu9250.magnetic[2] * 0.01) ** 2)
 
                 q = mahony.get_q()
 
@@ -84,13 +89,13 @@ def getReadLoop(i2c, setDisplay):
                 
                 precursors = f'acce: {mpu9250.acceleration[0]:+06.2f}, {-mpu9250.acceleration[1]:+06.2f}, {mpu9250.acceleration[2]:+06.2f}; ' + \
                              f'gyro: {mpu9250.gyro[0] * DEG_TO_RAD:+06.2f}, {-mpu9250.gyro[1] * DEG_TO_RAD:+06.2f}, {mpu9250.gyro[2] * DEG_TO_RAD:+06.2f}; ' + \
-                             f'magn: {mpu9250.magnetic[1]:+07.2f}, {-mpu9250.magnetic[0]:+07.2f}, {-mpu9250.magnetic[2]:+07.2f}; ' + \
+                             f'magn: {mpu9250.magnetic[1] * 0.01:+07.2f}, {-mpu9250.magnetic[0] * 0.01:+07.2f}, {-mpu9250.magnetic[2] * 0.01:+07.2f}; |mag|: {mag_mag:05.2f}; ' + \
                              f'q: {q[0]:+4.2f} {q[1]:+4.2f} {q[2]:+4.2f} {q[3]:+4.2f}'
                             
                 final = f'roll:{state.roll:+09.4f}, pitch:{state.pitch:+09.4f}, yaw:{state.yaw:+09.4f}'
                 
-                #print(precursors)
-                print(final)
+                print(precursors)
+                #print(final)
 
             except OSError as e:
               state.status = 'ESensor'
