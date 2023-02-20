@@ -139,8 +139,8 @@ class AK8963:
         return self._register_char(_WIA)
 
     def calibrate(self, count=256, delay=200):
-        self._offset = (0, 0, 0)
-        self._scale = (1, 1, 1)
+        self._offset = (0.0, 0.0, 0.0)
+        self._scale = (1.0, 1.0, 1.0)
 
         reading = self.magnetic
         minx = maxx = reading[0]
@@ -157,20 +157,21 @@ class AK8963:
             minz = min(minz, reading[2])
             maxz = max(maxz, reading[2])
             count -= 1
+            #print(f'~{(count * delay) / 1000.0}s remaining')
 
         # Hard iron correction
-        offset_x = (maxx + minx) / 2
-        offset_y = (maxy + miny) / 2
-        offset_z = (maxz + minz) / 2
+        offset_x = (maxx + minx) / 2.0
+        offset_y = (maxy + miny) / 2.0
+        offset_z = (maxz + minz) / 2.0
 
         self._offset = (offset_x, offset_y, offset_z)
 
         # Soft iron correction
-        avg_delta_x = (maxx - minx) / 2
-        avg_delta_y = (maxy - miny) / 2
-        avg_delta_z = (maxz - minz) / 2
+        avg_delta_x = (maxx - minx) / 2.0
+        avg_delta_y = (maxy - miny) / 2.0
+        avg_delta_z = (maxz - minz) / 2.0
 
-        avg_delta = (avg_delta_x + avg_delta_y + avg_delta_z) / 3
+        avg_delta = (avg_delta_x + avg_delta_y + avg_delta_z) / 3.0
 
         scale_x = avg_delta / avg_delta_x
         scale_y = avg_delta / avg_delta_y

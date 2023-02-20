@@ -200,8 +200,9 @@ class MPU6500:
             aoy = (self._accel_sf - abs(aoy)) * sign
 
         if ((self._accel_sf - abs(aoz)) < 1):
-            sign = (1, -1)[aoz < 0]
-            aoz = (self._accel_sf - abs(aoz)) * sign
+            #print(aoz)
+            sign = (-1, 1)[aoz < 0] # I had to reverse this for my calibration, I think
+            aoz = (self._accel_sf - abs(aoz)) * sign 
 
         self._gyro_offset = (gox / n, goy / n, goz / n)
         self._accel_offset = (aox, aoy, aoz)

@@ -4,6 +4,7 @@ import uasyncio
 import utime
 from state import state
 from mahonyQuaternion import MahonyQuaternion
+from madgwickQuaternion import MadgwickQuaternion
 import math
 
 from mpu6500 import MPU6500, SF_G, SF_DEG_S
@@ -24,27 +25,23 @@ def getReadLoop(i2c, setDisplay):
 
     async def readLoop():
         
-        lastUpdate = utime.time_ns()
-        deltat = 0.0
-        
         mpu6500 = None
         mpu9250 = None
         
         try:
             mpu6500 = MPU6500(
                 i2c,
-                accel_sf=SF_G) #,
-                #gyro_sf=SF_DEG_S) #,
-                #gyro_offset=(-0.06217736, 0.004287855, -0.01491513),
-                #accel_offset=(-0.004601356, 0.1052795, 0.2896795))
+                gyro_offset=(-0.06308424, 0.005061981, -0.01411032),
+                accel_offset=(-0.4055954, 0.07087928, -0.3054762))
             
             mpu9250 = MPU9250(
                 i2c,
                 mpu6500=mpu6500,
-                mag_offset=(-6.254883, 81.39698, -20.41348),
-                mag_scale=(0.9332827, 1.106261, 0.976022))
+                mag_offset=(2.233887, 78.51885, -11.19727),
+                mag_scale=(1.002542, 0.9729811, 1.025887))
             
-            #print(mpu6500.calibrate())
+            #print(mpu6500.calibrate(count=2000, delay=5))
+            #print(mpu9250.calibrate_mag(count=2000, delay=10))
             
         except OSError as e:
             state.status = 'ESensor'
@@ -52,6 +49,10 @@ def getReadLoop(i2c, setDisplay):
             return
 
         mahony = MahonyQuaternion()
+        madgwick = MadgwickQuaternion()
+        
+        lastUpdate = utime.time_ns()
+        deltat = 0.0
 
         while True:
             try:
@@ -61,41 +62,58 @@ def getReadLoop(i2c, setDisplay):
                 upseconds = utime.time() - state.boot
                 deltat = ((now - lastUpdate) / 1000000.0)
                 lastUpdate = now
+                
+                aN, aE, aD = 0.0, 0.0, 9.82 # mpu9250.acceleration[0], -mpu9250.acceleration[1], mpu9250.acceleration[2]
+                gN, gE, gD = 0.0, 0.0, 0.0 #-mpu9250.gyro[0], mpu9250.gyro[1], -mpu9250.gyro[2]
+                mN, mE, mD = 1.0, 0.1, 0.0 #-mpu9250.magnetic[1], mpu9250.magnetic[0], mpu9250.magnetic[2]
+                
+                #mag_mag = math.sqrt(
+                #    mN ** 2.0 +
+                #    mE ** 2.0 +
+                #    mD ** 2.0)
 
-                mahony.update(
-                    mpu9250.acceleration[0], -mpu9250.acceleration[1], mpu9250.acceleration[2],
-                    mpu9250.gyro[0] * DEG_TO_RAD, -mpu9250.gyro[1] * DEG_TO_RAD, mpu9250.gyro[2] * DEG_TO_RAD,
-                    mpu9250.magnetic[1] * 0.01, -mpu9250.magnetic[0] * 0.01, -mpu9250.magnetic[2] * 0.01,
+                #mahony.update(
+                #    aN, aE, aD,
+                #    gN, gE, gD,
+                #    mN, mE, mD,
+                #    deltat
+                #)
+                
+                madgwick.update(
+                    aN, aE, aD,
+                    gN, gE, gD,
+                    mN, mE, mD,
                     deltat
                 )
+
+                #q = mahony.get_q()
+                q = madgwick.get_q()
+                #q = [ 1.0, 0.0, 0.0, 0.0 ]
                 
-                mag_mag = math.sqrt(
-                    (mpu9250.magnetic[0] * 0.01) ** 2 +
-                    (mpu9250.magnetic[1] * 0.01) ** 2 +
-                    (mpu9250.magnetic[2] * 0.01) ** 2)
+                #state.roll  = math.atan2(2.0 * (q[3] * q[2] + q[0] * q[1]), 1.0 - 2.0 * (q[1] * q[1] + q[2] * q[2])) * RAD_TO_DEG
+                #state.pitch = math.asin(2.0 * (q[2] * q[0] - q[3] * q[1])) * RAD_TO_DEG
+                #state.yaw   = math.atan2(2.0 * (q[3] * q[0] + q[1] * q[2]), -1.0 + 2.0 * (q[0] * q[0] + q[1] * q[1])) * RAD_TO_DEG
 
-                q = mahony.get_q()
-
+                state.roll  = math.atan2(2.0 * (q[0] * q[1] + q[2]
+                                * q[3]), q[0] * q[0] - q[1]
+                                * q[1] - q[2] * q[2] + q[3]
+                                * q[3]) * RAD_TO_DEG
+                state.pitch = (-math.asin(2.0 * (q[1] * q[3] - q[0]
+                                * q[2]))) * RAD_TO_DEG
                 state.yaw   = (math.atan2(2.0 * (q[1] * q[2] + q[0]
                                 * q[3]), q[0] * q[0] + q[1]
                                 * q[1] - q[2] * q[2] - q[3]
                                 * q[3])) * RAD_TO_DEG
-                state.pitch = (-math.asin(2.0 * (q[1] * q[3] - q[0]
-                                * q[2]))) * RAD_TO_DEG
-                state.roll  = math.atan2(2.0 * (q[0] * q[1] + q[2]
-                                * q[3]), q[0] * q[0] - q[1]
-                                * q[1] - q[2] * q[2] + q[3]
-                                * q[3])
                 
-                precursors = f'acce: {mpu9250.acceleration[0]:+06.2f}, {-mpu9250.acceleration[1]:+06.2f}, {mpu9250.acceleration[2]:+06.2f}; ' + \
-                             f'gyro: {mpu9250.gyro[0] * DEG_TO_RAD:+06.2f}, {-mpu9250.gyro[1] * DEG_TO_RAD:+06.2f}, {mpu9250.gyro[2] * DEG_TO_RAD:+06.2f}; ' + \
-                             f'magn: {mpu9250.magnetic[1] * 0.01:+07.2f}, {-mpu9250.magnetic[0] * 0.01:+07.2f}, {-mpu9250.magnetic[2] * 0.01:+07.2f}; |mag|: {mag_mag:05.2f}; ' + \
-                             f'q: {q[0]:+4.2f} {q[1]:+4.2f} {q[2]:+4.2f} {q[3]:+4.2f}'
+                #precursors = f'acce: {aN:+06.2f}, {aE:+06.2f}, {aD:+06.2f}'
+                #precursors = f'gyro: {gN:+06.2f}, {gE:+06.2f}, {gD:+06.2f}'
+                precursors = f'magn: {mN:+07.2f}, {mE:+07.2f}, {mD:+07.2f}' # |mag|: {mag_mag:05.2f};'
+                
+                q_log = f'q: {q[0]:+4.2f} {q[1]:+4.2f} {q[2]:+4.2f} {q[3]:+4.2f}'
                             
                 final = f'roll:{state.roll:+09.4f}, pitch:{state.pitch:+09.4f}, yaw:{state.yaw:+09.4f}'
                 
-                print(precursors)
-                #print(final)
+                print(q_log)
 
             except OSError as e:
               state.status = 'ESensor'
