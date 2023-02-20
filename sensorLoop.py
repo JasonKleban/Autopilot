@@ -63,9 +63,9 @@ def getReadLoop(i2c, setDisplay):
                 deltat = ((now - lastUpdate) / 1000000.0)
                 lastUpdate = now
                 
-                aN, aE, aD = 0.0, 0.0, 9.82 # mpu9250.acceleration[0], -mpu9250.acceleration[1], mpu9250.acceleration[2]
+                aN, aE, aD = 0.0, 0.0, -9.80665 # mpu9250.acceleration[0], -mpu9250.acceleration[1], mpu9250.acceleration[2]
                 gN, gE, gD = 0.0, 0.0, 0.0 #-mpu9250.gyro[0], mpu9250.gyro[1], -mpu9250.gyro[2]
-                mN, mE, mD = 1.0, 0.1, 0.0 #-mpu9250.magnetic[1], mpu9250.magnetic[0], mpu9250.magnetic[2]
+                mN, mE, mD = 1.0, 0.0, -0.5 #-mpu9250.magnetic[1], mpu9250.magnetic[0], mpu9250.magnetic[2]
                 
                 #mag_mag = math.sqrt(
                 #    mN ** 2.0 +
