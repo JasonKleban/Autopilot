@@ -52,7 +52,7 @@ def getReadLoop(i2c, setDisplay):
         madgwick = MadgwickQuaternion()
 
         lastUpdate = utime.time_ns()
-        deltat = 0.0
+        deltaT = 0.0
 
         while True:
             try:
@@ -60,7 +60,7 @@ def getReadLoop(i2c, setDisplay):
 
                 now = utime.time_ns()
                 upseconds = utime.time() - state.boot
-                deltat = ((now - lastUpdate) / 1000000.0)
+                deltaT = ((now - lastUpdate) / 1000000.0)
                 lastUpdate = now
 
                 aN, aE, aD = -mpu9250.acceleration[0], mpu9250.acceleration[1], -mpu9250.acceleration[2]
@@ -71,7 +71,7 @@ def getReadLoop(i2c, setDisplay):
                     aN, aE, aD,
                     gN, gE, gD,
                     mN, mE, mD,
-                    deltat
+                    deltaT
                 )
 
                 q = madgwick.get_q()
