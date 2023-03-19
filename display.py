@@ -13,6 +13,8 @@ pin.value(1) #while OLED is running, must set high
 def getSetDisplay(i2c):
     oled = ssd1306.SSD1306_I2C(128, 64, i2c)
     
+    oled.contrast(255)
+    
     def setDisplay(lines):
         oled.fill(0)
         for i in range(len(lines)):

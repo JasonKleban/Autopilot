@@ -1,12 +1,14 @@
 import gc
 import uasyncio
 import display
+import utime
 from display import getSetDisplay
 #from webserver import web_page
 from sensorLoop import getReadLoop, devicesOff
 
 #define I2C_HARDWARE 1
 from machine import Pin, SoftI2C
+
 
 #server = ()
 
@@ -20,14 +22,19 @@ from machine import Pin, SoftI2C
 # 19 Dir
 # 20 fault
 # 40 buzzer
-# 41 scl
-# 42 sda
+# 41 sda
+# 42 scl
 # 47 switch
 
 i2cDisplay = SoftI2C(scl=Pin(18), sda=Pin(17), freq=115200)
-#i2cOther = SoftI2C(scl=Pin(18), sda=Pin(17), freq=400000)
+i2cOther = SoftI2C(scl=Pin(42), sda=Pin(41), freq=400000)
 setDisplay = getSetDisplay(i2cDisplay)
-#readLoop = getReadLoop(i2cOther, setDisplay)
+
+utime.sleep_ms(1000)
+
+readLoop = getReadLoop(i2cOther, setDisplay)
+
+#loop = None
 
 try:
   setDisplay([ "Hello!" ]) #, station.ifconfig()[0] ])
@@ -35,7 +42,7 @@ try:
   loop = uasyncio.get_event_loop()
 
   def _handle_exception(loop, context):
-#    devicesOff()
+    devicesOff()
     print(context)
     loop.stop()
 
@@ -51,5 +58,7 @@ finally:
   devicesOff()
 #  if (server != ()):
 #      server.close()
+  #if loop:
+  #  loop.stop()
   uasyncio.new_event_loop()  # Clear uasyncio stored state
 
