@@ -10,13 +10,27 @@ from machine import Pin, SoftI2C
 
 #server = ()
 
-i2cDisplay = SoftI2C(scl=Pin(15), sda=Pin(4), freq=115200)
-i2cOther = SoftI2C(scl=Pin(22), sda=Pin(21), freq=400000)
+# 1 EN
+# 2 M0
+# 3 M1
+# 4 M2
+# 5 Reset
+# 6 Slp
+# 7 Step
+# 19 Dir
+# 20 fault
+# 40 buzzer
+# 41 scl
+# 42 sda
+# 47 switch
+
+i2cDisplay = SoftI2C(scl=Pin(18), sda=Pin(17), freq=115200)
+#i2cOther = SoftI2C(scl=Pin(18), sda=Pin(17), freq=400000)
 setDisplay = getSetDisplay(i2cDisplay)
-readLoop = getReadLoop(i2cOther, setDisplay)
+#readLoop = getReadLoop(i2cOther, setDisplay)
 
 try:
-  #setDisplay([ "Hello!", station.ifconfig()[0] ])
+  setDisplay([ "Hello!" ]) #, station.ifconfig()[0] ])
 
   loop = uasyncio.get_event_loop()
 
