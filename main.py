@@ -30,8 +30,6 @@ i2cDisplay = SoftI2C(scl=Pin(18), sda=Pin(17), freq=115200)
 i2cOther = SoftI2C(scl=Pin(42), sda=Pin(41), freq=400000)
 setDisplay = getSetDisplay(i2cDisplay)
 
-utime.sleep_ms(1000)
-
 readLoop = getReadLoop(i2cOther, setDisplay)
 
 #loop = None
@@ -47,6 +45,8 @@ try:
     loop.stop()
 
   loop.set_exception_handler(_handle_exception)
+  
+  utime.sleep_ms(500)
   
 #  server = uasyncio.start_server(web_page, "", 80, backlog=5)
 #  loop.create_task(server)
