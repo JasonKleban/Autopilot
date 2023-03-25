@@ -105,8 +105,8 @@ class SSD1306:
     self.framebuf.rect(x, y, w, h, col)
   def fill_rect(self, x, y, w, h, col):
     self.framebuf.fill_rect(x, y, w, h, col)
-  def blit(self, fbuf, x, y):
-    self.framebuf.blit(fbuf, x, y)
+  def blit(self, fbuf, x, y, key=- 1):
+    self.framebuf.blit(fbuf, x, y, key)
 
 class SSD1306_I2C(SSD1306):
   def __init__(self, width, height, i2c, addr=0x3c, external_vcc=False):

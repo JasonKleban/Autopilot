@@ -53,9 +53,10 @@ def getReadLoop(i2c, setDisplay):
 
                 if (nextEngaged != state.engaged and nextEngaged) or (not nextEngaged):
                     state.idealHeading = nextHeading
+                    state.stepCount = 0
                         
                 state.engaged = nextEngaged
-                #state.alarm = switch.value()
+                state.correction = (state.idealHeading - state.heading + 540) % 360 - 180
 
             except OSError as e:
               state.status = 'ESensor'
@@ -63,22 +64,15 @@ def getReadLoop(i2c, setDisplay):
 
             try:
                 upseconds = utime.time() - state.boot
-                
-                diff = (state.idealHeading - state.heading + 540) % 360 - 180
-                
-                # print(diff)
-                # correction = diff if 180 < abs(diff) else ((360 * 2) - diff) % 360
 
-                indicatorValue = math.trunc(16 * math.atan((5.027 * diff)/157.5) / 3.141592)
+                indicatorValue = math.trunc(16 * math.atan((5.027 * state.correction)/157.5) / 3.141592)
 
                 indicator = f'{'<' * -indicatorValue:>8}' if indicatorValue < 0 else f'        {'>' * indicatorValue}'
 
                 setDisplay([
                     #station.ifconfig()[0],
                     f'uptime:{upseconds}s',
-                    f'c:{state.calibrated}',
                     f'h:{state.heading:+4.0f}*',
-                    f'i:{diff:+4.0f}*',
                     indicator if state.engaged else '    STANDBY',
                 ])
 
