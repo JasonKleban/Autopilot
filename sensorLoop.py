@@ -17,10 +17,10 @@ rtc = RTC()
 def devicesOff():
     light.value(0)
 
-def getReadLoop(i2c, setDisplay):
+def getReadLoop(i2c, setLargeDisplay):
     
-    imu = BNO055(i2c, transpose=(2, 1, 0), sign=(1, 0, 0))
-    imu.set_offsets(bytearray(ubinascii.unhexlify('22001e00e6ff40009702f3fdffffffff0000e803de04')))
+    imu = BNO055(i2c, transpose=(0, 1, 2), sign=(0, 0, 0))
+    #imu.set_offsets(bytearray(ubinascii.unhexlify('22001e00e6ff40009702f3fdffffffff0000e803de04')))
 
     async def readLoop():
         nonlocal imu
@@ -36,7 +36,18 @@ def getReadLoop(i2c, setDisplay):
                 #     if imu.calibrated():
                 #         calibration = imu.sensor_offsets()
                 #         print(hex(int(ubinascii.hexlify(calibration).decode(), 16)))
-                    
+                
+                q = imu.quaternion()
+
+                yaw = math.atan2(
+                    2.0 * (q[1] * q[2] + q[0] * q[3]), 
+                    q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3])
+                pitch = -math.asin(
+                    2.0 * (q[1] * q[3] - q[0] * q[2]))
+                roll = math.atan2(
+                    2.0 * (q[0] * q[1] + q[2] * q[3]), 
+                    q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3])
+
                     # print('Calibration required: sys {} gyro {} accel {} mag {}'.format(*imu.cal_status()))
                 # print('Temperature {}°C'.format(imu.temperature()))
                 # print('Mag       x {:5.0f}    y {:5.0f}     z {:5.0f}'.format(*imu.mag()))
@@ -44,12 +55,15 @@ def getReadLoop(i2c, setDisplay):
                 # print('Accel     x {:5.1f}    y {:5.1f}     z {:5.1f}'.format(*imu.accel()))
                 # print('Lin acc.  x {:5.1f}    y {:5.1f}     z {:5.1f}'.format(*imu.lin_acc()))
                 # print('Gravity   x {:5.1f}    y {:5.1f}     z {:5.1f}'.format(*imu.gravity()))
-                # print('Heading     {:4.0f} roll {:+5.0f} pitch {:+5.0f}'.format(*imu.euler()))
+                print('Heading     {:4.0f} roll {:+5.0f} pitch {:+5.0f}'.format(*imu.euler()))
+                # print('{:+0.5f}, {:+0.5f}, {:+0.5f}, {:+0.5f}'.format(*imu.quaternion()))
+                #print('Heading2    {:4.0f} roll {:+5.0f} pitch {:+5.0f}'.format(yaw, roll, pitch))
 
                 nextHeading = imu.euler()[0]
                 nextEngaged = switch.value()
 
-                state.heading = nextHeading
+                state.heading = round(nextHeading)
+                state.heading = 0 if state.heading == 360 else state.heading
 
                 if (nextEngaged != state.engaged and nextEngaged) or (not nextEngaged):
                     state.idealHeading = nextHeading
@@ -69,15 +83,16 @@ def getReadLoop(i2c, setDisplay):
 
                 indicator = f'{'<' * -indicatorValue:>8}' if indicatorValue < 0 else f'        {'>' * indicatorValue}'
 
-                setDisplay([
-                    #station.ifconfig()[0],
-                    f'uptime:{upseconds}s',
-                    f'h:{state.heading:+4.0f}*',
-                    indicator if state.engaged else '    STANDBY',
-                ])
+                setLargeDisplay(state.heading, indicatorValue, '' if state.engaged else 'STANDBY' if state.calibrated else 'CALIBRATING')
+                # setDisplay([
+                #     #station.ifconfig()[0],
+                #     f'uptime:{upseconds}s',
+                #     f'h:{state.heading:+4.0f}*',
+                #     indicator if state.engaged else '    STANDBY',
+                # ])
 
                 #buzzer.value(state.alarm)
-                buzzer.value(45 < abs(diff))
+                #buzzer.value(45 < abs(diff))
 
             except OSError as e:
               print(e)

@@ -16,7 +16,5 @@ digitBuffers = list(map(
     ]
 ))
 
-
 clear = framebuf.FrameBuffer(bytearray(42 * 64), 42, 64, framebuf.MONO_HLSB)
 clear.fill(0)
-#clear.fill_rect(42, 0, 6, 64, 1)

@@ -28,9 +28,9 @@ from machine import Pin, SoftI2C
 
 i2cDisplay = SoftI2C(scl=Pin(18), sda=Pin(17), freq=115200)
 i2cOther = SoftI2C(scl=Pin(42), sda=Pin(41), freq=400000)
-setDisplay = getSetDisplay(i2cDisplay)
+(setDisplay, setLargeDisplay) = getSetDisplay(i2cDisplay)
 
-readLoop = getReadLoop(i2cOther, setDisplay)
+readLoop = getReadLoop(i2cOther, setLargeDisplay)
 
 #loop = None
 
