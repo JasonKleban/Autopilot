@@ -5,6 +5,7 @@ import utime
 from display import getSetDisplay
 #from webserver import web_page
 from sensorLoop import getReadLoop, devicesOff
+from stepper import getStepperLoop, devicesOff as devicesOffStepper
 
 #define I2C_HARDWARE 1
 from machine import Pin, SoftI2C
@@ -12,6 +13,7 @@ from machine import Pin, SoftI2C
 
 #server = ()
 
+#DRV 8825
 # 1 EN
 # 2 M0
 # 3 M1
@@ -19,8 +21,8 @@ from machine import Pin, SoftI2C
 # 5 Reset
 # 6 Slp
 # 7 Step
-# 19 Dir
-# 20 fault
+# 19 Dir --> 46
+# 20 fault  --> 45
 # 40 buzzer
 # 41 sda
 # 42 scl
@@ -31,6 +33,7 @@ i2cOther = SoftI2C(scl=Pin(42), sda=Pin(41), freq=400000)
 (setDisplay, setLargeDisplay) = getSetDisplay(i2cDisplay)
 
 readLoop = getReadLoop(i2cOther, setLargeDisplay)
+stepperLoop = getStepperLoop()
 
 #loop = None
 
@@ -51,10 +54,12 @@ try:
 #  server = uasyncio.start_server(web_page, "", 80, backlog=5)
 #  loop.create_task(server)
   loop.create_task(readLoop())
+  loop.create_task(stepperLoop())
   loop.run_forever()
   loop.close()
 finally:
   print("GOODBYE")
+  devicesOffStepper()
   devicesOff()
 #  if (server != ()):
 #      server.close()
