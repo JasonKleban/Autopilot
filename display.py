@@ -11,7 +11,7 @@ pin = Pin(21, Pin.OUT)
 # led.value(1)
 
 pin.value(0) #set low to reset OLED
-#utime.sleep_ms(5000)
+utime.sleep_ms(100)
 pin.value(1) #while OLED is running, must set high
 
 def getSetDisplay(i2c):

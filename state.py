@@ -11,6 +11,7 @@ state.idealHeading = 0.0
 state.correction = 0
 state.pitch = 0.0
 state.roll = 0.0
+state.calibration = None
 state.calibrated = False
 state.engaged = False
 state.alarm = False

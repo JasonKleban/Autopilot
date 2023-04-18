@@ -46,7 +46,7 @@ try:
 
   loop.set_exception_handler(_handle_exception)
   
-  utime.sleep_ms(500)
+  # utime.sleep_ms(500)
   
 #  server = uasyncio.start_server(web_page, "", 80, backlog=5)
 #  loop.create_task(server)
