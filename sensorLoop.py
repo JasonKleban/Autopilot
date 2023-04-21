@@ -19,14 +19,29 @@ def devicesOff():
 
 def getReadLoop(i2c, setLargeDisplay):
     
-    imu = BNO055(i2c, transpose=(0, 1, 2), sign=(0, 0, 0))
-    imu.set_offsets(bytearray(ubinascii.unhexlify('e1ff0400ebff4bfe1d0232ff0000feff0000e803a702')))
+    imu = BNO055(i2c, transpose=(0, 2, 1), sign=(0, 1, 0))
+    imu.set_offsets(bytearray(ubinascii.unhexlify('e7ff0a00eeff31fd54fdf7ff00000000feffe803dc02')))
 
     async def readLoop():
         nonlocal imu
 
         while True:
             state.status = 'OK'
+            nextEngaged = switch.value()
+            nextHeading = imu.euler()[0]
+
+            state.heading = round(nextHeading)
+            state.heading = 0 if state.heading == 360 else state.heading
+
+            if not state.calibrated and nextEngaged:
+                state.wasEngagedBeforeCalibrated = True
+
+            if state.wasEngagedBeforeCalibrated and not nextEngaged:
+                state.wasEngagedBeforeCalibrated = False
+                
+            alarm = state.wasEngagedBeforeCalibrated
+
+            buzzer.value(alarm)
 
             #once calibrated, stays calibrated
             if not state.calibrated:
@@ -41,25 +56,20 @@ def getReadLoop(i2c, setLargeDisplay):
                     if state.calibrated:
                         state.calibration = imu.sensor_offsets()
                         print(hex(int(ubinascii.hexlify(state.calibration).decode(), 16)))
+                        buzzer.value(1)
+                        await uasyncio.sleep_ms(250)
+                        buzzer.value(0)
+                        
                 except OSError as e:
                     state.status = 'ESensor'
                     print(e)
             else:
                 try:
-                    # print('Orientation: {:0.2f}, {:0.2f}, {:0.2f}'.format(*imu.euler()))
-                    # print('Quaternion: {:0.2f}, {:0.2f}, {:0.2f}, {:0.2f}'.format(*imu.quaternion()))
-
-                    nextHeading = imu.euler()[0]
-                    nextEngaged = switch.value()
-
-                    state.heading = round(nextHeading)
-                    state.heading = 0 if state.heading == 360 else state.heading
-
                     if (nextEngaged != state.engaged and nextEngaged) or (not nextEngaged):
-                        state.idealHeading = nextHeading
+                        state.idealHeading = round(nextHeading)
                         state.stepCount = 0
                             
-                    state.engaged = nextEngaged
+                    state.engaged = not state.wasEngagedBeforeCalibrated and nextEngaged
                     state.correction = (state.idealHeading - state.heading + 540) % 360 - 180
 
                     upseconds = utime.time() - state.boot
@@ -67,13 +77,14 @@ def getReadLoop(i2c, setLargeDisplay):
                     indicatorValue = math.trunc(16 * math.atan((5.027 * state.correction)/157.5) / 3.141592)
 
                     setLargeDisplay(state.heading, indicatorValue, '' if state.engaged else 'STANDBY')
+                    
+                    print('Heading     {:4.0f} roll {:+5.0f} pitch {:+5.0f}'.format(*imu.euler()))
 
-                    #buzzer.value(state.alarm)
                     #buzzer.value(45 < abs(diff))
 
                 except OSError as e:
                     print(e)
 
-            await uasyncio.sleep_ms(250)
+            await uasyncio.sleep_ms(0)
 
     return readLoop

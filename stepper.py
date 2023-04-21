@@ -39,6 +39,11 @@ def getStepperLoop():
         #accelSpSS = 0.0
         #pid = new PID(output_limits=(-maxAccelSpSS, maxAccelSpSS))
         
+        reset.value(0)
+        slp.value(0)
+
+        await uasyncio.sleep_ms(10)
+                    
         reset.value(1)
         slp.value(1)
 
@@ -50,22 +55,25 @@ def getStepperLoop():
                 #    state.alarm = state.engaged
                 #    en.value(False)
                 #else:
-                en.value(not state.engaged)
 
                 # state.stepCount
 
                 # pid(state.correction)
+                
+                en.value(not state.engaged)
 
-                # direction.value(0 < state.correction)
-                step.value(1)
-                await uasyncio.sleep_ms(2)
-                step.value(0)
+                direction.value(state.correction < 0)
+
+                if state.engaged and abs(state.correction) > 1:
+                    step.value(1)
+                    await uasyncio.sleep_ms(2)
+                    step.value(0)
 
                 #print('Step')
 
             except OSError as e:
               print(e)
 
-            #await uasyncio.sleep_ms(10)
+            await uasyncio.sleep_ms(5)
 
     return stepperLoop
