@@ -29,9 +29,9 @@ password = ''
 #print('Connection successful!')
 #print(station.ifconfig())
 
-led = Pin(35, Pin.OUT)
+#led = Pin(35, Pin.OUT)
 
-led.value(1)
+#led.value(1)
 
 
 

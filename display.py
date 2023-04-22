@@ -13,6 +13,10 @@ pin = Pin(21, Pin.OUT)
 pin.value(0) #set low to reset OLED
 utime.sleep_ms(100)
 pin.value(1) #while OLED is running, must set high
+utime.sleep_ms(1000)
+pin.value(0) #set low to reset OLED
+utime.sleep_ms(100)
+pin.value(1) #while OLED is running, must set high
 
 def getSetDisplay(i2c):
     oled = ssd1306.SSD1306_I2C(128, 64, i2c)

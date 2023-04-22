@@ -8,7 +8,7 @@ from bno055 import BNO055
 
 import ubinascii, uhashlib
 
-light = Pin(26, Pin.OUT, Pin.PULL_DOWN)
+light = Pin(35, Pin.OUT, Pin.PULL_DOWN)
 switch = Pin(47, Pin.IN, Pin.PULL_DOWN)
 buzzer = Pin(40, Pin.OUT, Pin.PULL_DOWN)
 
@@ -19,11 +19,13 @@ def devicesOff():
 
 def getReadLoop(i2c, setLargeDisplay):
     
-    imu = BNO055(i2c, transpose=(0, 2, 1), sign=(0, 1, 0))
-    imu.set_offsets(bytearray(ubinascii.unhexlify('e7ff0a00eeff31fd54fdf7ff00000000feffe803dc02')))
+    imu = BNO055(i2c, transpose=(1, 2, 0), sign=(1, 1, 0))
+    imu.set_offsets(bytearray(ubinascii.unhexlify('f3ff1a00defff3ff6dfd2bfd010000000000e803c002')))
 
     async def readLoop():
         nonlocal imu
+        
+        lastCalibrationStatus = ()
 
         while True:
             state.status = 'OK'
@@ -48,8 +50,14 @@ def getReadLoop(i2c, setLargeDisplay):
                 try:
                     #print('Calibration: sys {} gyro {} accel {} mag {}'.format(*imu.cal_status()))
                     state.calibrated = imu.calibrated()
-
-                    print('Calibration Progress: {} of 3, {} of 3, {} of 3, {} of 3'.format(*imu.cal_status()))
+                    
+                    nextCalibrationStatus = list(imu.cal_status())
+                    
+                    #print(nextCalibrationStatus)
+                    
+                    if lastCalibrationStatus != nextCalibrationStatus:
+                        print('Calibration Progress: {} of 3, {} of 3, {} of 3, {} of 3'.format(*nextCalibrationStatus))
+                        lastCalibrationStatus = nextCalibrationStatus
 
                     setLargeDisplay(state.heading, 0, 'CALIBRATING')
 
@@ -57,8 +65,10 @@ def getReadLoop(i2c, setLargeDisplay):
                         state.calibration = imu.sensor_offsets()
                         print(hex(int(ubinascii.hexlify(state.calibration).decode(), 16)))
                         buzzer.value(1)
+                        light.value(1)
                         await uasyncio.sleep_ms(250)
                         buzzer.value(0)
+                        light.value(0)
                         
                 except OSError as e:
                     state.status = 'ESensor'
@@ -78,13 +88,17 @@ def getReadLoop(i2c, setLargeDisplay):
 
                     setLargeDisplay(state.heading, indicatorValue, '' if state.engaged else 'STANDBY')
                     
-                    print('Heading     {:4.0f} roll {:+5.0f} pitch {:+5.0f}'.format(*imu.euler()))
+                    #print('Heading     {:4.0f} roll {:+5.0f} pitch {:+5.0f}'.format(*imu.euler()))
+                    #print('Gravity   x {:5.1f}    y {:5.1f}     z {:5.1f}'.format(*imu.gravity()))
+                    #print('Lin acc.  x {:5.1f}    y {:5.1f}     z {:5.1f}'.format(*imu.lin_acc()))
+                    
+                    print('Heading     {:4.0f} roll {:+5.0f} pitch {:+5.0f}  Gravity   x {:5.1f}    y {:5.1f}     z {:5.1f}'.format(*imu.euler(), *imu.gravity()))
 
                     #buzzer.value(45 < abs(diff))
 
                 except OSError as e:
                     print(e)
 
-            await uasyncio.sleep_ms(0)
+            await uasyncio.sleep_ms(500)
 
     return readLoop
