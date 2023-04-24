@@ -18,20 +18,27 @@ def devicesOff():
     light.value(0)
 
 def getDisplacemntEnvelope(decayMS = 30 * 1000):
-    prevAccel = 0
-    accVelocity = 0
-    accDisplacement = 0
-    envMin = 0
-    envMax = 0
+    prevAccel = 0.0
+    accVelocity = 0.0
+    accDisplacement = 0.0
+    envMin = 0.0
+    envMax = 0.0
 
     def step(currAccel, deltaMS):
         nonlocal prevAccel, accVelocity, accDisplacement, envMin, envMax
         
-        dampenFactor = (1.0 - deltaMS) / decayMS
+        deltaT = deltaMS / 1000.0
+        
+        dampenFactor = 0.9 #1.0 - (deltaMS / decayMS)
+        
+        #print('delta {:+05.1f} decay {:+0.4f}'.format(deltaMS, dampenFactor))
 
-        accVelocity += (prevAccel + currAccel) * deltaMS * dampenFactor / 2
-        accDisplacement += accVelocity * deltaMS * dampenFactor / 2
+        accVelocity += (prevAccel + currAccel) * deltaT * dampenFactor / 2.0
+        accDisplacement += accVelocity * deltaT * (dampenFactor * dampenFactor) / 2.0
         prevAccel = currAccel
+        
+        print('currAccel  {:+08.4f} m/s2  accVelocity {:+05.1f} m/s accDisplacement {:+05.1f} m'
+              .format(currAccel, accVelocity, accDisplacement))
 
         envMin = min(envMin * dampenFactor, accDisplacement)
         envMax = max(envMax * dampenFactor, accDisplacement)
@@ -95,10 +102,10 @@ def getReadLoop(i2c, setLargeDisplay):
                     if state.calibrated:
                         state.calibration = imu.sensor_offsets()
                         print(hex(int(ubinascii.hexlify(state.calibration).decode(), 16)))
-                        buzzer.value(1)
+                        #buzzer.value(1)
                         light.value(1)
                         await uasyncio.sleep_ms(250)
-                        buzzer.value(0)
+                        #buzzer.value(0)
                         light.value(0)
                         
                 except OSError as e:
@@ -128,7 +135,7 @@ def getReadLoop(i2c, setLargeDisplay):
 
                     displacementFt = displacemntEnvelope(dotProduct, deltaMS) * 3.28084 # Meters to Feet
 
-                    print('Swells {:+05.1f}'.format(displacementFt))
+                    #print('Swells {:+05.1f}'.format(displacementFt))
                     
                     #print('Heading     {:4.0f} roll {:+5.0f} pitch {:+5.0f}'.format(*imu.euler()))
                     #print('Gravity   x {:5.1f}    y {:5.1f}     z {:5.1f}'.format(*imu.gravity()))
