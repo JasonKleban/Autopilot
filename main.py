@@ -21,15 +21,15 @@ from machine import Pin, SoftI2C
 # 5 Reset
 # 6 Slp
 # 7 Step
-# 19 Dir --> 46
-# 20 fault  --> 45
+# 45 Dir
+# 46 fault
 # 40 buzzer
-# 41 sda
-# 42 scl
+# 42 sda
+# 41 scl
 # 47 switch
 
 i2cDisplay = SoftI2C(scl=Pin(18), sda=Pin(17), freq=115200)
-i2cOther = SoftI2C(scl=Pin(42), sda=Pin(41), freq=400000)
+i2cOther = SoftI2C(scl=Pin(41), sda=Pin(42), freq=400000)
 (setDisplay, setLargeDisplay) = getSetDisplay(i2cDisplay)
 
 readLoop = getReadLoop(i2cOther, setLargeDisplay)

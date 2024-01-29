@@ -63,15 +63,17 @@ def getReadLoop(i2c, setLargeDisplay):
             state.status = 'OK'
             nextEngaged = switch.value()
             nextHeading = imu.euler()[0]
-
-            state.heading = round(nextHeading)
-            state.heading = 0 if state.heading == 360 else state.heading
+            gravityVec = imu.gravity()
+            accelVec = imu.lin_acc()
 
             nowMS = utime.ticks_ms()
             deltaMS = utime.ticks_diff(nowMS, lastMS)
             lastMS = nowMS
 
             upseconds = utime.time() - state.boot
+
+            state.heading = round(nextHeading)
+            state.heading = 0 if state.heading == 360 else state.heading
 
             if not state.calibrated and nextEngaged:
                 state.wasEngagedBeforeCalibrated = True
@@ -94,14 +96,14 @@ def getReadLoop(i2c, setLargeDisplay):
                     #print(nextCalibrationStatus)
                     
                     if lastCalibrationStatus != nextCalibrationStatus:
-                        print('Calibration Progress: {} of 3, {} of 3, {} of 3, {} of 3'.format(*nextCalibrationStatus))
+                        #print('Calibration Progress: {} of 3, {} of 3, {} of 3, {} of 3'.format(*nextCalibrationStatus))
                         lastCalibrationStatus = nextCalibrationStatus
 
                     setLargeDisplay(state.heading, 0, 'CALIBRATING')
 
                     if state.calibrated:
                         state.calibration = imu.sensor_offsets()
-                        print(hex(int(ubinascii.hexlify(state.calibration).decode(), 16)))
+                        #print(hex(int(ubinascii.hexlify(state.calibration).decode(), 16)))
                         #buzzer.value(1)
                         light.value(1)
                         await uasyncio.sleep_ms(250)
@@ -124,16 +126,14 @@ def getReadLoop(i2c, setLargeDisplay):
 
                     setLargeDisplay(state.heading, indicatorValue, '' if state.engaged else 'STANDBY')
                     
-                    gravityVec = imu.gravity()
                     gravityMag = math.sqrt(gravityVec[0] * gravityVec[0] + gravityVec[1] * gravityVec[1] + gravityVec[2] * gravityVec[2])
                     gravityNormalized = (gravityVec[0] / gravityMag, gravityVec[1] / gravityMag, gravityVec[2] / gravityMag)
-                    accelVec = imu.lin_acc()
                     
                     dotProduct = -(gravityNormalized[0] * accelVec[0] + gravityNormalized[1] * accelVec[1] + gravityNormalized[2] * accelVec[2])
                     
-                    #print('Vertical Acceleration {:+05.1f}'.format(dotProduct))
+                    print('{:+05.1f} ms    {:+09.6f} m/s2'.format(deltaMS, dotProduct))
 
-                    displacementFt = displacemntEnvelope(dotProduct, deltaMS) * 3.28084 # Meters to Feet
+                    #displacementFt = displacemntEnvelope(dotProduct, deltaMS) * 3.28084 # Meters to Feet
 
                     #print('Swells {:+05.1f}'.format(displacementFt))
                     
