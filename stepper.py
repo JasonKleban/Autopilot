@@ -27,17 +27,17 @@ m2 = Pin(4, Pin.OUT, Pin.PULL_DOWN)
 reset = Pin(5, Pin.OUT, Pin.PULL_DOWN)
 slp = Pin(6, Pin.OUT, Pin.PULL_DOWN)
 # step = Pin(7, Pin.OUT, Pin.PULL_DOWN)
-step = PWM(Pin(7), freq=0, duty=512)
-direction = Pin(45, Pin.OUT, Pin.PULL_DOWN)
-fault = Pin(46, Pin.IN, Pin.PULL_DOWN)
+step = None
+direction = Pin(46, Pin.OUT, Pin.PULL_DOWN)
+fault = Pin(45, Pin.IN, Pin.PULL_DOWN)
 
 def devicesOff():
     en.value(1)
 
-print(p)
-
 def getStepperLoop():
     async def stepperLoop():
+        global step
+        
         #accelSpSS = 0.0
         #pid = new PID(output_limits=(-maxAccelSpSS, maxAccelSpSS))
         
@@ -68,10 +68,11 @@ def getStepperLoop():
 
                 if state.engaged:
                     if abs(state.correction) > 1:
-                        step.freq(10)
+                        step = PWM(Pin(7), freq=200, duty=512)
                         # await uasyncio.sleep_ms(2)
-                    else:
-                        step.freq(0)
+                    elif step is not None:
+                        step.deinit()
+                        step = None
 
                 #print('Step')
 

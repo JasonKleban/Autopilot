@@ -48,7 +48,6 @@ def getDisplacemntEnvelope(decayMS = 30 * 1000):
     return step
 
 def getReadLoop(i2c, setLargeDisplay):
-    
     imu = BNO055(i2c, transpose=(1, 2, 0), sign=(1, 1, 0))
     imu.set_offsets(bytearray(ubinascii.unhexlify('f3ff1a00defff3ff6dfd2bfd010000000000e803c002')))
 
