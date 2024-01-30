@@ -17,8 +17,8 @@ from pid import PID
 # 45 Dir
 # 46 Fault
 
-maxSpeedSpS = 200.0
-maxAccelSpSS = 100.0
+maxSpeedSpS = 200000.0
+#maxAccelSpSS = 100.0
 
 en = Pin(1, Pin.OUT, Pin.PULL_DOWN)
 m0 = Pin(2, Pin.OUT, Pin.PULL_DOWN)
@@ -39,7 +39,7 @@ def getStepperLoop():
         global step
         
         #accelSpSS = 0.0
-        #pid = new PID(output_limits=(-maxAccelSpSS, maxAccelSpSS))
+        pid = PID(output_limits=(-maxSpeedSpS, maxSpeedSpS))
         
         reset.value(0)
         slp.value(0)
@@ -48,6 +48,10 @@ def getStepperLoop():
                     
         reset.value(1)
         slp.value(1)
+        
+        m0.value(0)
+        m1.value(0)
+        m2.value(0)
 
         while True:
             try:
@@ -60,15 +64,17 @@ def getStepperLoop():
 
                 # state.stepCount
 
-                # pid(state.correction)
+                recommendation = int(pid(state.correction) * 10.0)
+                
+                # print('{:+08.4f} full steps per second'.format(recommendation))
                 
                 en.value(not state.engaged)
 
-                direction.value(state.correction < 0)
+                direction.value(0 < recommendation)
 
                 if state.engaged:
-                    if abs(state.correction) > 1:
-                        step = PWM(Pin(7), freq=200, duty=512)
+                    if abs(recommendation) > 1:
+                        step = PWM(Pin(7), freq=abs(recommendation), duty=512)
                         # await uasyncio.sleep_ms(2)
                     elif step is not None:
                         step.deinit()

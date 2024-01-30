@@ -13,10 +13,8 @@ from machine import Pin, SoftI2C
 
 #server = ()
 
-utime.sleep_ms(500)
-
 i2cDisplay = SoftI2C(scl=Pin(18), sda=Pin(17), freq=115200)
-i2cOther = SoftI2C(scl=Pin(42), sda=Pin(41), freq=400)
+i2cOther = SoftI2C(scl=Pin(42), sda=Pin(41), freq=115200)
 (setDisplay, setLargeDisplay) = getSetDisplay(i2cDisplay)
 
 #loop = None

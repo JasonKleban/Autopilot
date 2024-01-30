@@ -130,7 +130,7 @@ def getReadLoop(i2c, setLargeDisplay):
                     
                     dotProduct = -(gravityNormalized[0] * accelVec[0] + gravityNormalized[1] * accelVec[1] + gravityNormalized[2] * accelVec[2])
                     
-                    print('{:+05.1f} ms    {:+09.6f} m/s2'.format(deltaMS, dotProduct))
+                    #print('{:+05.1f} ms    {:+09.6f} m/s2'.format(deltaMS, dotProduct))
 
                     #displacementFt = displacemntEnvelope(dotProduct, deltaMS) * 3.28084 # Meters to Feet
 
@@ -147,6 +147,6 @@ def getReadLoop(i2c, setLargeDisplay):
                 except OSError as e:
                     print(e)
 
-            await uasyncio.sleep_ms(100)
+            await uasyncio.sleep_ms(1)
 
     return readLoop
