@@ -17,7 +17,7 @@ from pid import PID
 # 45 Dir
 # 46 Fault
 
-maxSpeedSpS = 200000.0
+maxSpeedSpS = 20000.0
 #maxAccelSpSS = 100.0
 
 en = Pin(1, Pin.OUT, Pin.PULL_DOWN)
@@ -31,6 +31,21 @@ step = None
 direction = Pin(46, Pin.OUT, Pin.PULL_DOWN)
 fault = Pin(45, Pin.IN, Pin.PULL_DOWN)
 
+divisor_speeds = {
+    1: (0, 0, 0),
+    2: (1, 0, 0),
+    4: (0, 1, 0),
+    8: (1, 1, 0),
+    16: (0, 0, 1),
+    32: (1, 0, 1)
+}
+
+def setSpeed(divisor):
+    m = divisor_speeds[divisor]
+    m0.value(m[0])
+    m1.value(m[1])
+    m2.value(m[2])
+
 def devicesOff():
     en.value(1)
 
@@ -39,7 +54,7 @@ def getStepperLoop():
         global step
         
         #accelSpSS = 0.0
-        pid = PID(output_limits=(-maxSpeedSpS, maxSpeedSpS))
+        pid = PID(output_limits=(-maxSpeedSpS * 32, maxSpeedSpS * 32), sample_time = None)
         
         reset.value(0)
         slp.value(0)
@@ -48,10 +63,6 @@ def getStepperLoop():
                     
         reset.value(1)
         slp.value(1)
-        
-        m0.value(0)
-        m1.value(0)
-        m2.value(0)
 
         while True:
             try:
@@ -65,18 +76,38 @@ def getStepperLoop():
                 # state.stepCount
 
                 recommendation = int(pid(state.correction) * 10.0)
+                abs_rec = abs(recommendation)
+                direction.value(0 < recommendation)
                 
                 # print('{:+08.4f} full steps per second'.format(recommendation))
                 
                 en.value(not state.engaged)
 
-                direction.value(0 < recommendation)
-
                 if state.engaged:
-                    if abs(recommendation) > 1:
-                        step = PWM(Pin(7), freq=abs(recommendation), duty=512)
-                        # await uasyncio.sleep_ms(2)
+                    if abs_rec > 1:
+                        if abs_rec * 32 < maxSpeedSpS:
+                            setSpeed(32)
+                            step = PWM(Pin(7), freq=abs_rec * 32, duty=512)
+                        elif abs_rec * 16 < maxSpeedSpS:
+                            setSpeed(16)
+                            step = PWM(Pin(7), freq=abs_rec * 16, duty=512)
+                        elif abs_rec * 8 < maxSpeedSpS:
+                            setSpeed(8)
+                            step = PWM(Pin(7), freq=abs_rec * 8, duty=512)
+                        elif abs_rec * 4 < maxSpeedSpS:
+                            setSpeed(4)
+                            step = PWM(Pin(7), freq=abs_rec * 4, duty=512)
+                        elif abs_rec * 2 < maxSpeedSpS:
+                            setSpeed(2)
+                            step = PWM(Pin(7), freq=abs_rec * 2, duty=512)
+                        else:
+                            setSpeed(1)
+                            step = PWM(Pin(7), freq=abs_rec * 1, duty=512)
                     elif step is not None:
+                        # full step mode for strongest hold
+                        setSpeed(1)
+
+                        #no pwm though
                         step.deinit()
                         step = None
 
